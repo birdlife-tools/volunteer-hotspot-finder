@@ -23,7 +23,7 @@ Algorithm that analyzes historical sighting data and identifies geographic cells
 
 Join the discussion:
 
-[![Matrix](https://img.shields.io/badge/Matrix-%23volunteer-hotspot-finder-black?logo=matrix)](https://matrix.to/#/#volunteer-hotspot-finder:matrix.org)
+[![Matrix](https://img.shields.io/badge/Matrix-Chat-black?logo=matrix](https://matrix.to/#/#volunteer-hotspot-finder:matrix.org)
 
 ## License
 
