@@ -1,6 +1,5 @@
 """Tests for grid analyzer."""
 
-
 from birdlife_hotspot_finder.analyzers.grid import GridAnalyzer, GridCell
 
 

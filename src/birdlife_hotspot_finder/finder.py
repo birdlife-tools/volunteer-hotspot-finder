@@ -241,7 +241,10 @@ class HotspotFinder:
         lat_offset = radius_km / 111.0
         lng_offset = radius_km / (111.0 * abs(lat) / 90 if lat != 0 else 111.0)
         bounds = (
-            lat - lat_offset, lat + lat_offset, lng - lng_offset, lng + lng_offset
+            lat - lat_offset,
+            lat + lat_offset,
+            lng - lng_offset,
+            lng + lng_offset,
         )
 
         return await self._analyze_bounds(
@@ -416,9 +419,7 @@ class HotspotFinder:
 
         return min(score, 1.0)  # Cap at 1.0
 
-    def _haversine(
-        self, lat1: float, lng1: float, lat2: float, lng2: float
-    ) -> float:
+    def _haversine(self, lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         """Calculate distance in km between two points."""
         import math
 
