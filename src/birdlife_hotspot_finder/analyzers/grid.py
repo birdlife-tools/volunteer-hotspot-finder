@@ -19,6 +19,7 @@ class GridCell:
     checklist_count: int = 0
     nearest_hotspot: Hotspot | None = None
     nearest_hotspot_distance_km: float | None = None
+    priority: float = 0.5
 
     @property
     def has_coverage(self) -> bool:

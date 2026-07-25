@@ -31,8 +31,11 @@ Find coverage gaps in a region:
 # Serbia
 python cli_example.py RS
 
-# Croatia  
-python cli_example.py HR
+# Sweden
+python cli_example.py SE
+
+# New York
+python cli_example.py US-NY
 
 # Near specific coordinates (25km radius)
 python cli_example.py --lat 44.8 --lng 20.4
