@@ -20,7 +20,7 @@ from birdlife_hotspot_finder import Config, HotspotFinder
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Find eBird coverage gaps")
-    parser.add_argument("region", nargs="?", help="eBird region code (e.g., RS, HR)")
+    parser.add_argument("region", nargs="?", help="eBird region code (e.g., RS, SE, US-NY)")
     parser.add_argument("--lat", type=float, help="Latitude")
     parser.add_argument("--lng", type=float, help="Longitude")
     parser.add_argument(
