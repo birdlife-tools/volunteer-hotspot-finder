@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import date
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 def slugify(name: str) -> str:
@@ -80,7 +80,7 @@ class Location(BaseModel):
 
     @field_validator("slug", mode="before")
     @classmethod
-    def generate_slug(cls, v: str | None, info) -> str:
+    def generate_slug(cls, v: str | None, info: ValidationInfo) -> str:
         if v:
             return v
         name = info.data.get("name", "")
@@ -114,6 +114,6 @@ class Location(BaseModel):
             extensions=extensions,
         )
 
-    def to_schema_dict(self) -> dict:
+    def to_schema_dict(self) -> dict[str, Any]:
         """Export as schema-compliant dict (using aliases)."""
         return self.model_dump(by_alias=True, exclude_none=True)

@@ -45,7 +45,7 @@ class HotspotFinder:
         lng: float | None = None,
         radius_km: float = 25,
         limit: int = 10,
-    ) -> dict:
+    ) -> dict[str, object]:
         """Find coverage gaps in a region or around coordinates.
 
         Args:

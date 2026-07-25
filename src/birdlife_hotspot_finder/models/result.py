@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,7 +30,7 @@ class FinderResult(BaseModel):
     data: list[Location]
     meta: FinderMeta
 
-    def to_response_dict(self) -> dict:
+    def to_response_dict(self) -> dict[str, Any]:
         """Export as API response dict."""
         return {
             "data": [loc.to_schema_dict() for loc in self.data],
