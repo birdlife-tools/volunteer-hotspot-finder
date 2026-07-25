@@ -2,6 +2,7 @@
 
 __version__ = "0.1.0-dev"
 
+from .config import Config
 from .finder import HotspotFinder
 
-__all__ = ["HotspotFinder", "__version__"]
+__all__ = ["Config", "HotspotFinder", "__version__"]
