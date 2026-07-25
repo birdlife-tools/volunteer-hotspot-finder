@@ -1,3 +1,6 @@
-"""Data models aligned with birdlife-schema."""
+"""Data models for volunteer-hotspot-finder."""
 
-__all__: list[str] = []
+from .location import CoverageExtensions, Location
+from .result import FinderMeta, FinderResult
+
+__all__ = ["CoverageExtensions", "FinderMeta", "FinderResult", "Location"]

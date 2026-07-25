@@ -1,0 +1,3 @@
+[submodule "schemas/birdlife-schema"]
+	path = schemas/birdlife-schema
+	url = git@github.com:birdlife-tools/birdlife-schema.git
