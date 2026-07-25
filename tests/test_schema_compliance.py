@@ -1,12 +1,23 @@
-"""Tests that verify model output matches birdlife-schema."""
+"""Tests that verify model output matches birdlife-schema.
+
+We validate against BOTH JSON Schema and Avro schema to ensure all serializers
+output data that conforms to birdlife-schema specification.
+"""
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
 
 from birdlife_hotspot_finder.models import CoverageExtensions, Location
+from birdlife_hotspot_finder.models.result import FinderMeta, FinderResult
+from birdlife_hotspot_finder.schema_validator import (
+    get_schema_version,
+    validate_location_avro,
+    validate_result_avro,
+)
 
 SCHEMA_PATH = (
     Path(__file__).parent.parent / "schemas" / "birdlife-schema" / "json-schema"
@@ -91,3 +102,61 @@ class TestLocationSchemaCompliance:
         for key, value in extensions.items():
             assert isinstance(value, str), f"Extension {key} value must be string"
             assert "." in key, f"Extension key {key} must be namespaced"
+
+
+class TestAvroSchemaCompliance:
+    """Validate models against Avro schema (catches drift in binary serialization)."""
+
+    def test_schema_version(self):
+        """Ensure we're testing against expected schema version."""
+        assert get_schema_version() == "0.3.7"
+
+    def test_location_validates_against_avro_schema(self):
+        """Location model validates against Avro schema."""
+        location = Location(
+            location_id="loc-123",
+            slug="test-location",
+            name="Test Location",
+            geodetic_datum="WGS84",
+            decimal_latitude=44.8,
+            decimal_longitude=20.4,
+            coordinate_uncertainty_in_meters=5000,
+            extensions={"coverage.gapType": "spatial"},
+        )
+        errors = validate_location_avro(location)
+        assert errors == [], f"Avro validation errors: {errors}"
+
+    def test_grid_cell_validates_against_avro_schema(self):
+        """Grid cell created via factory validates against Avro."""
+        coverage = CoverageExtensions(
+            gap_type="spatial",
+            priority_score=0.75,
+            checklist_count=0,
+            reasoning="No checklists in 12 months",
+        )
+        location = Location.create_grid_cell(lat=44.8, lng=20.4, coverage=coverage)
+        errors = validate_location_avro(location)
+        assert errors == [], f"Avro validation errors: {errors}"
+
+    def test_full_result_validates_against_avro(self):
+        """Complete FinderResult validates against Avro schema."""
+        coverage = CoverageExtensions(
+            gap_type="spatial",
+            priority_score=0.85,
+            checklist_count=0,
+            reasoning="No eBird hotspots in this grid cell",
+        )
+        result = FinderResult(
+            data=[
+                Location.create_grid_cell(lat=44.8, lng=20.4, coverage=coverage),
+                Location.create_grid_cell(lat=44.9, lng=20.5, coverage=coverage),
+            ],
+            meta=FinderMeta(
+                result_type="coverage-gaps",
+                query_timestamp=datetime.now(UTC),
+                grid_size_km=10,
+                region="RS",
+            ),
+        )
+        errors = validate_result_avro(result)
+        assert errors == [], f"Avro validation errors: {errors}"
