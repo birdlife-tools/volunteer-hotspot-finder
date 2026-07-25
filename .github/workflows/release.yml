@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'VERSION'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Python
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Sync pyproject.toml version
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+
+      - name: Build package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: python -m build
+
+      - name: Create release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## Volunteer Hotspot Finder v${{ steps.version.outputs.version }}
+
+            ### Installation
+
+            ```bash
+            pip install birdlife-hotspot-finder==${{ steps.version.outputs.version }}
+            ```
+
+            See [README.md](https://github.com/birdlife-tools/volunteer-hotspot-finder/blob/main/README.md) for usage.
+          files: |
+            dist/*
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+
+      - name: Publish to PyPI
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Update organization README
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "ORG_PAT not set, skipping README update"
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Clone .github repo
+          git clone https://x-access-token:${GH_TOKEN}@github.com/birdlife-tools/.github.git org-readme
+          cd org-readme
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Update version badge for volunteer-hotspot-finder in README
+          sed -i "s|\[\!\[v[0-9]*\.[0-9]*\.[0-9]*\](https://img.shields.io/badge/volunteer--hotspot--finder|\[\!\[v${VERSION}\](https://img.shields.io/badge/volunteer--hotspot--finder|g" profile/README.md
+          sed -i "s|volunteer--hotspot--finder-v[0-9]*\.[0-9]*\.[0-9]*|volunteer--hotspot--finder-v${VERSION}|g" profile/README.md
+          sed -i "s|volunteer-hotspot-finder/releases/tag/v[0-9]*\.[0-9]*\.[0-9]*|volunteer-hotspot-finder/releases/tag/v${VERSION}|g" profile/README.md
+          sed -i "s|volunteer--hotspot--finder-v${VERSION}-yellow|volunteer--hotspot--finder-v${VERSION}-green|g" profile/README.md
+
+          # Check if there are changes
+          if git diff --quiet; then
+            echo "No changes to README"
+            exit 0
+          fi
+
+          # Create branch and PR
+          BRANCH="chore/update-hotspot-finder-v${VERSION}"
+          git checkout -b "$BRANCH"
+          git add profile/README.md
+          git commit -m "Update volunteer-hotspot-finder version to v${VERSION}"
+          git push origin "$BRANCH"
+
+          # Create PR
+          gh pr create \
+            --repo birdlife-tools/.github \
+            --title "Update volunteer-hotspot-finder to v${VERSION}" \
+            --body "Automated update from volunteer-hotspot-finder release workflow." \
+            --head "$BRANCH" \
+            --base main
+
+      - name: Notify Matrix
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          MATRIX_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$MATRIX_TOKEN" ]; then
+            echo "MATRIX_ACCESS_TOKEN not set, skipping notification"
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.version }}"
+          ROOM_ID="!LbvemTtQtHqmmzWGMO:matrix.org"
+
+          curl -s -X PUT \
+            "https://matrix.org/_matrix/client/v3/rooms/${ROOM_ID}/send/m.room.message/$(date +%s)" \
+            -H "Authorization: Bearer ${MATRIX_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "msgtype": "m.notice",
+            "body": "volunteer-hotspot-finder v${VERSION} released | PyPI: https://pypi.org/project/birdlife-hotspot-finder/${VERSION}/ | Release: https://github.com/birdlife-tools/volunteer-hotspot-finder/releases/tag/v${VERSION}"
+          }
+          EOF
