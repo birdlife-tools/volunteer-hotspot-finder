@@ -105,12 +105,12 @@ class Location(BaseModel):
             extensions = coverage.to_extensions_dict()
 
         return cls(
-            locationID=location_id,
+            location_id=location_id,
             slug=slug,
             name=name,
-            decimalLatitude=lat,
-            decimalLongitude=lng,
-            coordinateUncertaintyInMeters=grid_size_km * 1000 // 2,
+            decimal_latitude=lat,
+            decimal_longitude=lng,
+            coordinate_uncertainty_in_meters=grid_size_km * 1000 // 2,
             extensions=extensions,
         )
 

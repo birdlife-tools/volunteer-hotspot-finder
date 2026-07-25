@@ -1,3 +1,5 @@
 """Coverage analysis algorithms."""
 
-__all__: list[str] = []
+from .grid import GridAnalyzer, GridCell
+
+__all__ = ["GridAnalyzer", "GridCell"]

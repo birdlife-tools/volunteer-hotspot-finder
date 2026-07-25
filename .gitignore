@@ -25,3 +25,10 @@ htmlcov/
 
 # ruff
 .ruff_cache/
+
+# Cache
+.cache/
+
+# Environment files with secrets
+.env
+examples/.env

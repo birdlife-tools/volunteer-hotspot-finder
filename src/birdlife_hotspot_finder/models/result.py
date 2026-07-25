@@ -34,5 +34,5 @@ class FinderResult(BaseModel):
         """Export as API response dict."""
         return {
             "data": [loc.to_schema_dict() for loc in self.data],
-            "meta": self.meta.model_dump(by_alias=True, exclude_none=True),
+            "meta": self.meta.model_dump(by_alias=True, exclude_none=True, mode="json"),
         }

@@ -1,5 +1,5 @@
 """API clients for external data sources."""
 
-from .ebird import EBirdClient
+from .ebird import EBirdClient, Hotspot
 
-__all__ = ["EBirdClient"]
+__all__ = ["EBirdClient", "Hotspot"]
