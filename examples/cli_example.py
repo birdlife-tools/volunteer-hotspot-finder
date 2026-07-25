@@ -3,24 +3,30 @@
 
 Usage:
     1. Copy .env.example to .env and fill in your eBird API key
-    2. Run: python cli_example.py RS          # Serbia
-            python cli_example.py SE          # Sweden
-            python cli_example.py US-NY       # New York
-            python cli_example.py --lat 44.8 --lng 20.4  # Coordinates
+    2. Run: python cli_example.py RS          # Serbia (JSON output)
+            python cli_example.py SE --format csv      # Sweden (CSV)
+            python cli_example.py US-NY --format geojson  # New York (GeoJSON)
+            python cli_example.py --lat 44.8 --lng 20.4   # Coordinates
 """
 
 import argparse
 import asyncio
-import json
 import sys
 from pathlib import Path
 
 from birdlife_hotspot_finder import Config, HotspotFinder
+from birdlife_hotspot_finder.serializers import (
+    CsvSerializer,
+    GeoJsonSerializer,
+    JsonSerializer,
+)
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Find eBird coverage gaps")
-    parser.add_argument("region", nargs="?", help="eBird region code (e.g., RS, SE, US-NY)")
+    parser.add_argument(
+        "region", nargs="?", help="eBird region code (e.g., RS, SE, US-NY)"
+    )
     parser.add_argument("--lat", type=float, help="Latitude")
     parser.add_argument("--lng", type=float, help="Longitude")
     parser.add_argument(
@@ -28,6 +34,18 @@ async def main() -> None:
     )
     parser.add_argument(
         "--limit", type=int, default=10, help="Max results (default: 10)"
+    )
+    parser.add_argument(
+        "--format",
+        choices=["json", "csv", "geojson"],
+        default="json",
+        help="Output format (default: json)",
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        help="Output file (default: stdout)",
     )
     parser.add_argument(
         "--env-file",
@@ -65,8 +83,20 @@ async def main() -> None:
                 limit=args.limit,
             )
 
-        # Output as JSON
-        print(json.dumps(result.to_response_dict(), indent=2))
+        # Serialize based on format
+        if args.format == "json":
+            output = JsonSerializer().serialize(result)
+        elif args.format == "csv":
+            output = CsvSerializer().serialize(result)
+        elif args.format == "geojson":
+            output = GeoJsonSerializer().serialize(result)
+
+        # Write output
+        if args.output:
+            args.output.write_text(output)
+            print(f"Written to {args.output}", file=sys.stderr)
+        else:
+            print(output)
 
     finally:
         await finder.close()
