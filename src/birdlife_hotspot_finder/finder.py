@@ -165,15 +165,17 @@ class HotspotFinder:
 
     async def _find_gaps_in_region(self, region: str, limit: int) -> FinderResult:
         """Find gaps in a region using grid analysis."""
-        if region not in REGION_BOUNDS:
-            raise ValueError(
-                f"Unknown region: {region}. "
-                f"Supported: {', '.join(REGION_BOUNDS.keys())}. "
-                f"Or use bounds=(min_lat, max_lat, min_lng, max_lng)."
-            )
-
-        bounds = REGION_BOUNDS[region]
         hotspots_data = await self._get_hotspots_cached(region)
+
+        if region in REGION_BOUNDS:
+            bounds = REGION_BOUNDS[region]
+        elif hotspots_data:
+            # Compute bounds from hotspot locations
+            lats = [h["lat"] for h in hotspots_data]
+            lngs = [h["lng"] for h in hotspots_data]
+            bounds = (min(lats), max(lats), min(lngs), max(lngs))
+        else:
+            raise ValueError(f"No hotspots found for region: {region}")
 
         return await self._analyze_bounds(
             bounds=bounds,
